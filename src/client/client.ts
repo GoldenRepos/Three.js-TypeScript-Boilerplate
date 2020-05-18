@@ -2,6 +2,7 @@ import * as THREE from '/build/three.module.js'
 import { OrbitControls } from '/jsm/controls/OrbitControls'
 import Stats from '/jsm/libs/stats.module'
 import {GUI} from '/jsm/libs/dat.gui.module'
+import '/pixi.js/dist/pixi.min.js'
 
 const scene: THREE.Scene = new THREE.Scene()
 
@@ -9,9 +10,7 @@ const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.i
 
 const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
-document.body.appendChild(renderer.domElement)
-
-const controls = new OrbitControls(camera, renderer.domElement)
+//document.body.appendChild(renderer.domElement)
 
 const geometry: THREE.BoxGeometry = new THREE.BoxGeometry()
 const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
@@ -42,12 +41,32 @@ const cameraFolder = gui.addFolder("Camera")
 cameraFolder.add(camera.position, "z", 0, 10, 0.01)
 cameraFolder.open()
 
+var opts = {transparent:false, antialias: true, resolution: window.devicePixelRatio}
+var pixiScene = new PIXI.Container();
+var pixiCanvas = PIXI.autoDetectRenderer( window.innerWidth, window.innerHeight, opts);
+document.body.appendChild( pixiCanvas.view );
+
+var threeCanvasTexture = PIXI.Texture.fromCanvas(<HTMLCanvasElement>renderer.domElement)
+var threeCanvasSprite = new PIXI.Sprite(threeCanvasTexture);
+pixiScene.addChild(threeCanvasSprite);
+threeCanvasSprite.x = (window.innerWidth-threeCanvasSprite.width)/2
+threeCanvasSprite.y = (window.innerHeight-threeCanvasSprite.height)/2
+
+var label = new PIXI.Text("PIXI Canvas",{fontSize: 24, fill : 0xffffff})
+label.position.set(Math.round(window.innerWidth-label.width)/2,Math.round(window.innerHeight-label.height)/2)
+pixiScene.addChild(label)
+
+const controls = new OrbitControls(camera, pixiCanvas.view )
+
 var animate = function () {
     requestAnimationFrame(animate)
 
     controls.update()
 
     render()
+    
+    threeCanvasSprite.texture.update() 
+    pixiCanvas.render( pixiScene )
 
     stats.update()
 };
